@@ -44,7 +44,8 @@ public class DumbElevator implements Elevator {
     	this.currentFloor = initialFloor;
     }
 
-    @Override
+   
+    +@Override
     public void peopleWaiting(List<List<Person>> peopleByFloor) {
     	this.peopleByFloor = peopleByFloor;
     	this.peopleWaitingAtFloors =
