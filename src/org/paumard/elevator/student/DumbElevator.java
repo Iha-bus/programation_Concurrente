@@ -1,5 +1,6 @@
 package org.paumard.elevator.student;
 
+import org.paumard.elevator.Building;
 import org.paumard.elevator.Elevator;
 import org.paumard.elevator.model.Person;
 
@@ -14,11 +15,11 @@ import java.util.stream.Collectors;
 
 public class DumbElevator implements Elevator {
 
-	public static final int MAX_FLOOR = 4;
-	private int elevatorCapacity;
+	//Building.MAX_FLOOR       alt shift R       == false on peu le remplacer par !
+	private int elevatorCapacity;			// currentFloorindex == currentFloor-1
 	private int currentFloor;
 	private int prvFloor=1;
-	private int prvFloor2;
+	private int tmp;
 	private List<Person> listPeopleInElevator = new ArrayList<Person>();
 	private List<List<Person>> peopleByFloor;
 
@@ -45,7 +46,7 @@ public class DumbElevator implements Elevator {
     }
 
    
-    +@Override
+    @Override
     public void peopleWaiting(List<List<Person>> peopleByFloor) {
     	this.peopleByFloor = peopleByFloor;
     	this.peopleWaitingAtFloors =
@@ -54,46 +55,42 @@ public class DumbElevator implements Elevator {
     			.sum();
     }
 
-    @Override
-    public int chooseNextFloor() {
-    	if (lastPersonArrived &&
-    			this.listPeopleInElevator.isEmpty()==true &&
-    			this.peopleWaitingAtFloors == 0) {
-    		return 1;
-    	}
-    	else if ((this.listPeopleInElevator.size()==this.elevatorCapacity)) { // si l'Elevator est rempli faut mieux vider le plus du monde possible;
-    	Map<Integer, Long> collectElevator = this.listPeopleInElevator.stream().map(p-> p.getDestinationFloor())
-    	.collect(Collectors.groupingBy(Function.identity(),Collectors.counting()));
-    	Long max =collectElevator.entrySet().stream().map(m->m.getValue()).max(Long::compare).orElseThrow();
-    	int max2= getKey(collectElevator,max);
-    	prvFloor2 =prvFloor;
-    	prvFloor =max2;
-    	return max2;
-    	}
-    	else if (this.peopleWaitingAtFloors!=0 && prvFloor==prvFloor2) {// on choisit selon le nombre max dans les étage sinon selon le nombre max dans
-    																	// l'étage courant
-    		Map <Integer,Integer> myMap=new HashMap<>();
-    		for(int i=0;i<MAX_FLOOR;i++)
-    		{
-    			myMap.put(i+1, this.peopleByFloor.get(i).size());
-    		}
-    		int max =myMap.entrySet().stream().map(m->m.getValue()).max(Long::compare).orElseThrow();
-    		int max1= getKey(myMap,max);
-    		Map<Integer, Long> collect = peopleByFloor.get(currentFloor-1).stream().map(p-> p.getDestinationFloor())
-    												  							   .collect(Collectors.groupingBy(Function.identity(),
-    												  									   						  Collectors.counting()));
-    		Long max2 =collect.entrySet().stream().map(m->m.getValue()).max(Long::compare).orElseThrow();
-    		int max3= getKey(collect,max2);
+	@Override
+	public int chooseNextFloor() {
+		if (lastPersonArrived && this.listPeopleInElevator.isEmpty() && this.peopleWaitingAtFloors == 0) {
+			return 1;
+		}
+
+		else if ((this.listPeopleInElevator.size() == this.elevatorCapacity)) { // si l'Elevator est rempli faut mieux
+																				// vider le plus du monde possible;
+			return choseNextFloorWhenElevIsNonEmpty();
+		}
+
+		else if (this.peopleWaitingAtFloors != 0 && prvFloor == tmp) {// on choisit selon le nombre max dans les étage
+																		// sinon selon le nombre max dans
+																		// l'étage courant
+			Map<Integer, Integer> myMap = new HashMap<>();
+			for (int FloorIndex = 0; FloorIndex < Building.MAX_FLOOR; FloorIndex++) {
+				myMap.put(FloorIndex + 1, this.peopleByFloor.get(FloorIndex).size());
+			}
+			int max = myMap.entrySet().stream().map(m -> m.getValue()).max(Long::compare).orElseThrow(); //le maximum de perssone 
+			int max1 = getKey(myMap, max);     //max1 contient L'etage ou il yas plus de perssonne en file d'attente
+			
+			Map<Integer, Long> collect = peopleByFloor.get(currentFloor - 1).stream().map(p -> p.getDestinationFloor())
+					.collect(Collectors.groupingBy(Function.identity(),	// histogramme des etages par personne (densité)
+							Collectors.counting()));
+    		Long max2 = collect.entrySet().stream().map(m->m.getValue()).max(Long::compare).orElseThrow();
+    		int max3= getKey(collect,max2); //max2 contient L'etage de distination ou il a plus de perssonne 
     		
     		if (peopleByFloor.get(currentFloor-1).size()!=0) {
     			System.out.println("****2..1****");
     			System.out.println(this.listPeopleInElevator.size());
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=max3;
     			return max3;
     			}
     			else {
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=max1;
     			return max1;}
     			
@@ -101,31 +98,31 @@ public class DumbElevator implements Elevator {
     	else { // fonctionnement par défaut {less dump}
     		switch (currentFloor ) {
     		  case 1: {
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=1;
     			return 2;
     		} case 2: {
-    			if (prvFloor==1) {
-    			prvFloor2 =prvFloor;
+    			if (prvFloor==1) { //monter
+    			tmp =prvFloor;
     			prvFloor=2;
     			return 3;
-    			}else if (prvFloor==3){
-    			prvFloor2 =prvFloor;
+    			}else if (prvFloor==3){//descendre
+    			tmp =prvFloor;
     			prvFloor=2;
     			return 1;
     			}
     		} case 3: {
     			if (prvFloor==2) {
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=3;
     			return 4;
     			}else if (prvFloor==4){
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=3;
     			return 2;
     			}
     		}case 4: {
-    			prvFloor2 =prvFloor;
+    			tmp =prvFloor;
     			prvFloor=4;
     			return 3;
     		}
@@ -135,6 +132,16 @@ public class DumbElevator implements Elevator {
     	
     	return 1;
     	}
+
+	private int choseNextFloorWhenElevIsNonEmpty() {
+		Map<Integer, Long> collectElevator = this.listPeopleInElevator.stream().map(p-> p.getDestinationFloor())
+    	.collect(Collectors.groupingBy(Function.identity(),Collectors.counting()));
+    	Long max =collectElevator.entrySet().stream().map(m->m.getValue()).max(Long::compare).orElseThrow();
+    	int max2= getKey(collectElevator,max);
+    	tmp =prvFloor;
+    	prvFloor =max2;
+    	return max2;
+	}
 
     @Override
     public void arriveAtFloor(int floor) {
